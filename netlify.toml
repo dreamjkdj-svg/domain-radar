@@ -1,0 +1,17 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# 매일 오전 6시 자동 크롤링 (UTC 21:00 = KST 06:00)
+[functions."crawl"]
+  schedule = "0 21 * * *"
+
+[[redirects]]
+  from = "/api/crawl"
+  to = "/.netlify/functions/crawl"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

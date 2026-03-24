@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DomainRadar v2 — Real API Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Epilogue:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05080b;
+  --s1: #0a0f14;
+  --s2: #0f161d;
+  --s3: #161f28;
+  --border: #1a2530;
+  --border2: #243040;
+  --g: #00d4aa;
+  --g2: #00a8ff;
+  --warn: #ffb020;
+  --hot: #ff4f6b;
+  --text: #ddeeff;
+  --sub: #6688aa;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Epilogue', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,212,170,0.015) 2px,
+    rgba(0,212,170,0.015) 4px
+  );
+  pointer-events:none;
+  z-index:9999;
+}
+
+.wrap { max-width:1200px; margin:0 auto; padding:0 28px; }
+
+/* ── TOP NAV ── */
+nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 0;
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:100;
+  background: rgba(5,8,11,0.92);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo {
+  font-family: var(--mono);
+  font-size:1rem; font-weight:700;
+  letter-spacing:-1px;
+  color: var(--text);
+}
+.nav-logo b { color: var(--g); }
+
+.nav-pills { display:flex; gap:6px; }
+.nav-pill {
+  font-family: var(--mono);
+  font-size:0.65rem;
+  padding:4px 12px;
+  border-radius:3px;
+  border:1px solid var(--border2);
+  color: var(--sub);
+  cursor:pointer;
+  background:transparent;
+  transition:.15s;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.nav-pill:hover, .nav-pill.on { border-color:var(--g); color:var(--g); }
+.nav-pill.on { background: rgba(0,212,170,.08); }
+
+.nav-status {
+  font-family: var(--mono);
+  font-size:0.65rem;
+  color: var(--sub);
+  display:flex; align-items:center; gap:8px;
+}
+.dot {
+  width:6px; height:6px; border-radius:50%; background:var(--g);
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── PIPELINE DIAGRAM ── */
+.pipeline-section {
+  padding:40px 0 20px;
+}
+
+.pipeline-title {
+  font-family: var(--mono);
+  font-size:0.65rem;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color: var(--sub);
+  margin-bottom:20px;
+}
+
+.pipeline {
+  display:flex;
+  align-items:stretch;
+  gap:0;
+  background: var(--s1);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+}
+
+.pipe-step {
+  flex:1;
+  padding:20px 18px;
+  border-right:1px solid var(--border);
+  position:relative;
+  transition:.2s;
+}
+.pipe-step:last-child { border-right:none; }
+.pipe-step.active { background: rgba(0,212,170,.05); }
+.pipe-step.active .pipe-num { color:var(--g); border-color:var(--g); }
+
+.pipe-arrow {
+  position:absolute; right:-12px; top:50%;
+  transform:translateY(-50%);
+  width:24px; height:24px;
+  background: var(--s1);
+  border:1px solid var(--border2);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; color:var(--sub);
+  z-index:2;
+}
+
+.pipe-num {
+  font-family:var(--mono);
+  font-size:0.6rem;
+  border:1px solid var(--border2);
+  color:var(--sub);
+  width:22px; height:22px;
+  border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:10px;
+  font-weight:700;
+}
+
+.pipe-source {
+  font-family:var(--mono);
+  font-size:0.75rem;
+  font-weight:700;
+  color:var(--text);
+  margin-bottom:4px;
+}
+
+.pipe-desc {
+  font-size:0.7rem;
+  color:var(--sub);
+  line-height:1.5;
+}
+
+.pipe-badge {
+  display:inline-block;
+  margin-top:8px;
+  font-family:var(--mono);
+  font-size:0.58rem;
+  padding:2px 7px;
+  border-radius:3px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.badge-free { background:rgba(0,212,170,.12); color:var(--g); }
+.badge-paid { background:rgba(255,176,32,.1); color:var(--warn); }
+.badge-ai { background:rgba(0,168,255,.1); color:var(--g2); }
+
+/* ── MAIN GRID ── */
+.main-grid {
+  display:grid;
+  grid-template-columns:280px 1fr;
+  gap:20px;
+  padding:24px 0 48px;
+  align-items:start;
+}
+
+/* ── SIDEBAR ── */
+.sidebar { display:flex; flex-direction:column; gap:14px; }
+
+.sidebar-card {
+  background: var(--s1);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.sidebar-head {
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  font-family:var(--mono);
+  font-size:0.65rem;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:var(--sub);
+  display:flex; align-items:center; justify-content:space-between;
+}
+
+/* API config */
+.api-row {
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.api-row:last-child { border-bottom:none; }
+
+.api-name {
+  font-family:var(--mono);
+  font-size:0.72rem;
+  color:var(--text);
+  margin-bottom:2px;
+}
+
+.api-type {
+  font-size:0.62rem;
+  color:var(--sub);
+}
+
+.api-toggle {
+  width:36px; height:20px;
+  border-radius:10px;
+  background:var(--border2);
+  border:none; cursor:pointer;
+  position:relative;
+  transition:.2s;
+  flex-shrink:0;
+}
+.api-toggle::after {
+  content:'';
+  position:absolute;
+  top:3px; left:3px;
+  width:14px; height:14px;
+  border-radius:50%;
+  background:var(--sub);
+  transition:.2s;
+}
+.api-toggle.on { background:rgba(0,212,170,.3); }
+.api-toggle.on::after { left:19px; background:var(--g); }
+
+/* filter */
+.filter-group { padding:12px 16px; border-bottom:1px solid var(--border); }
+.filter-group:last-child { border-bottom:none; }
+.filter-label { font-family:var(--mono); font-size:0.62rem; color:var(--sub); margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px; }
+.filter-chips { display:flex; flex-wrap:wrap; gap:5px; }
+.fchip {
+  font-family:var(--mono);
+  font-size:0.62rem;
+  padding:3px 9px;
+  border:1px solid var(--border2);
+  border-radius:3px;
+  color:var(--sub);
+  cursor:pointer;
+  background:transparent;
+  transition:.15s;
+}
+.fchip:hover { border-color:var(--g); color:var(--g); }
+.fchip.on { background:rgba(0,212,170,.1); border-color:var(--g); color:var(--g); }
+
+/* score range */
+.range-row { padding:12px 16px; }
+.range-label {
+  display:flex; justify-content:space-between;
+  font-family:var(--mono); font-size:0.62rem; color:var(--sub);
+  margin-bottom:8px;
+}
+input[type=range] {
+  width:100%; accent-color:var(--g);
+  cursor:pointer;
+}
+
+/* stats */
+.stat-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:1px;
+  background:var(--border);
+}
+.stat-cell {
+  background:var(--s1);
+  padding:14px;
+  text-align:center;
+}
+.stat-val {
+  font-family:var(--mono);
+  font-size:1.2rem;
+  font-weight:700;
+  color:var(--g);
+  display:block;
+}
+.stat-key {
+  font-size:0.6rem;
+  color:var(--sub);
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  margin-top:2px;
+}
+
+/* ── DOMAIN LIST ── */
+.list-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+
+.list-title {
+  font-family:var(--mono);
+  font-size:0.65rem;
+  color:var(--sub);
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+}
+
+.run-btn {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 20px;
+  background: var(--g);
+  color: var(--bg);
+  border:none; border-radius:6px;
+  font-family:var(--mono);
+  font-size:0.72rem; font-weight:700;
+  cursor:pointer;
+  transition:.15s;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.run-btn:hover { background:#00ffca; }
+.run-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+.run-icon { font-size:14px; }
+.run-icon.spin { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* domain cards */
+.domain-list { display:flex; flex-direction:column; gap:10px; }
+
+.d-card {
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  transition:.2s;
+  opacity:0;
+  transform:translateX(10px);
+  animation: slideIn .35s forwards;
+}
+@keyframes slideIn { to { opacity:1; transform:translateX(0); } }
+
+.d-card:nth-child(1){animation-delay:.04s}
+.d-card:nth-child(2){animation-delay:.08s}
+.d-card:nth-child(3){animation-delay:.12s}
+.d-card:nth-child(4){animation-delay:.16s}
+.d-card:nth-child(5){animation-delay:.20s}
+.d-card:nth-child(6){animation-delay:.24s}
+.d-card:nth-child(7){animation-delay:.28s}
+.d-card:nth-child(8){animation-delay:.32s}
+
+.d-card:hover { border-color:var(--border2); transform:translateY(-1px); box-shadow:0 6px 24px rgba(0,0,0,.5); }
+.d-card.rank1 { border-left:3px solid var(--g); }
+.d-card.rank2 { border-left:3px solid var(--g2); }
+.d-card.rank3 { border-left:3px solid var(--warn); }
+
+.d-main {
+  display:flex; align-items:center; gap:16px;
+  padding:16px 20px;
+}
+
+.d-rank {
+  font-family:var(--mono);
+  font-size:0.65rem;
+  color:var(--sub);
+  width:20px; text-align:center;
+  flex-shrink:0;
+}
+
+.d-score-ring {
+  width:48px; height:48px; flex-shrink:0;
+  position:relative;
+}
+.d-score-ring svg { width:100%; height:100%; }
+.d-score-ring .ring-bg { fill:none; stroke:var(--border2); stroke-width:3; }
+.d-score-ring .ring-fill { fill:none; stroke-width:3; stroke-linecap:round;
+  transform:rotate(-90deg); transform-origin:50% 50%;
+  transition: stroke-dashoffset .6s ease;
+}
+.ring-a { stroke:var(--g); }
+.ring-b { stroke:var(--g2); }
+.ring-c { stroke:var(--warn); }
+.d-score-num {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:0.78rem; font-weight:700;
+}
+
+.d-info { flex:1; min-width:0; }
+
+.d-name {
+  font-family:var(--mono);
+  font-size:1rem; font-weight:700;
+  margin-bottom:4px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.d-name .tld { color:var(--g); }
+
+.d-tags { display:flex; gap:4px; flex-wrap:wrap; }
+.dtag {
+  font-size:0.58rem;
+  font-family:var(--mono);
+  padding:2px 7px;
+  border-radius:3px;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+.dtag-trend { background:rgba(255,79,107,.12); color:var(--hot); }
+.dtag-seo { background:rgba(0,168,255,.1); color:var(--g2); }
+.dtag-short { background:rgba(0,212,170,.1); color:var(--g); }
+.dtag-backlink { background:rgba(255,176,32,.1); color:var(--warn); }
+.dtag-dict { background:rgba(180,120,255,.1); color:#b47cff; }
+
+.d-metrics {
+  display:flex; gap:20px;
+  padding:0 20px 0 56px;
+  flex-shrink:0;
+}
+
+.d-metric { text-align:right; }
+.d-mval {
+  font-family:var(--mono);
+  font-size:0.78rem; font-weight:700;
+  color:var(--text); display:block;
+}
+.d-mkey {
+  font-size:0.58rem; color:var(--sub);
+  text-transform:uppercase; letter-spacing:.5px;
+}
+
+.d-action {
+  padding:0 20px 0 56px;
+  flex-shrink:0;
+  display:flex; gap:6px;
+}
+
+.btn-reg {
+  padding:7px 16px;
+  background:var(--g);
+  color:var(--bg);
+  border:none; border-radius:5px;
+  font-family:var(--mono); font-size:0.65rem; font-weight:700;
+  cursor:pointer; white-space:nowrap;
+  text-decoration:none; display:inline-block;
+  transition:.15s;
+}
+.btn-reg:hover { background:#00ffca; }
+
+.btn-copy {
+  padding:7px 10px;
+  background:transparent;
+  color:var(--sub);
+  border:1px solid var(--border2);
+  border-radius:5px;
+  font-family:var(--mono); font-size:0.65rem;
+  cursor:pointer; transition:.15s;
+}
+.btn-copy:hover { border-color:var(--g2); color:var(--g2); }
+
+/* expandable reason */
+.d-expand {
+  border-top:1px solid var(--border);
+  padding:12px 20px 12px 56px;
+  display:none;
+}
+.d-expand.open { display:block; }
+
+.d-reason {
+  font-size:0.75rem;
+  color:#7a9dba;
+  line-height:1.6;
+  border-left:2px solid var(--g);
+  padding-left:10px;
+  margin-bottom:10px;
+  font-style:italic;
+}
+
+.d-data-row {
+  display:flex; gap:16px; flex-wrap:wrap;
+}
+.d-datum {
+  background:var(--s2);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:8px 12px;
+}
+.d-datum-label { font-family:var(--mono); font-size:0.58rem; color:var(--sub); text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+.d-datum-val { font-family:var(--mono); font-size:0.8rem; font-weight:700; color:var(--text); }
+
+/* source badge on card */
+.d-source {
+  font-family:var(--mono); font-size:0.58rem;
+  padding:2px 6px; border-radius:3px;
+  text-transform:uppercase; letter-spacing:.4px;
+  flex-shrink:0;
+}
+.src-whois { background:rgba(0,212,170,.08); color:var(--g); border:1px solid rgba(0,212,170,.2); }
+.src-godaddy { background:rgba(0,168,255,.08); color:var(--g2); border:1px solid rgba(0,168,255,.2); }
+.src-sim { background:rgba(90,90,90,.2); color:var(--sub); border:1px solid var(--border2); }
+
+/* skeleton */
+.skel {
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:18px 20px;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+@keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.9} }
+.skel-bar { background:var(--border2); border-radius:3px; margin-bottom:8px; }
+
+/* log panel */
+.log-panel {
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:14px;
+}
+.log-head {
+  padding:10px 16px;
+  border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:0.62rem;
+  color:var(--sub); text-transform:uppercase; letter-spacing:1px;
+  display:flex; align-items:center; gap:8px;
+}
+.log-body {
+  padding:10px 16px;
+  max-height:160px; overflow-y:auto;
+  font-family:var(--mono); font-size:0.65rem;
+  line-height:1.8;
+}
+.log-line { color:var(--sub); }
+.log-line.ok { color:var(--g); }
+.log-line.info { color:var(--g2); }
+.log-line.warn { color:var(--warn); }
+
+/* affiliate partner section */
+.partner-section {
+  margin-top:24px;
+  background: var(--s1);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+}
+.partner-head {
+  padding:12px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.partner-head-label {
+  font-family:var(--mono); font-size:0.62rem;
+  text-transform:uppercase; letter-spacing:1.5px; color:var(--sub);
+}
+.partner-head-note {
+  font-family:var(--mono); font-size:0.6rem;
+  color:var(--sub);
+}
+.partner-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap:1px;
+  background: var(--border);
+}
+.partner-card {
+  background: var(--s1);
+  padding:16px 18px;
+  text-decoration:none;
+  display:flex; flex-direction:column; gap:6px;
+  transition:.15s;
+  cursor:pointer;
+  border:none;
+  text-align:left;
+}
+.partner-card:hover { background: var(--s2); }
+.partner-card:hover .partner-name { color:var(--g); }
+.partner-flag {
+  font-size:0.65rem;
+  display:flex; align-items:center; gap:5px;
+  margin-bottom:2px;
+}
+.flag-kr { color:#4d9fff; }
+.flag-global { color:var(--sub); }
+.partner-name {
+  font-family:var(--mono); font-size:0.85rem; font-weight:700;
+  color:var(--text); transition:.15s;
+}
+.partner-type {
+  font-size:0.65rem; color:var(--sub); line-height:1.4;
+}
+.partner-arrow {
+  font-size:0.75rem; color:var(--sub);
+  margin-top:auto; padding-top:8px;
+  transition:.15s;
+}
+.partner-card:hover .partner-arrow { color:var(--g); transform:translateX(3px); }
+
+/* in-card partner strip */
+.d-partners {
+  border-top: 1px solid var(--border);
+  padding: 10px 20px 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: rgba(0,0,0,.15);
+}
+.d-partner-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--sub);
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-right: 2px;
+  white-space: nowrap;
+}
+.d-partner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--sub);
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: .15s;
+  white-space: nowrap;
+}
+.d-partner-pill:hover {
+  background: rgba(0,212,170,.07);
+  border-color: rgba(0,212,170,.5);
+  color: var(--g);
+}
+.d-partner-pill.kr {
+  border-color: rgba(77,159,255,.2);
+  color: #6aabff;
+}
+.d-partner-pill.kr:hover {
+  background: rgba(77,159,255,.07);
+  border-color: rgba(77,159,255,.6);
+  color: #90c4ff;
+}
+.d-partner-pill.featured {
+  border-color: rgba(0,212,170,.3);
+  color: var(--g);
+  background: rgba(0,212,170,.05);
+}
+.d-partner-pill.featured:hover {
+  background: rgba(0,212,170,.12);
+  border-color: var(--g);
+}
+
+@media(max-width:800px){
+  .main-grid { grid-template-columns:1fr; }
+  .pipeline { flex-direction:column; }
+  .pipe-step { border-right:none; border-bottom:1px solid var(--border); }
+  .pipe-arrow { display:none; }
+  .d-main { flex-wrap:wrap; }
+  .d-metrics { padding-left:20px; }
+  .d-action { padding-left:20px; }
+  .d-expand { padding-left:20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="wrap">
+<nav>
+  <div class="nav-logo">Domain<b>Radar</b> <span style="color:var(--sub);font-size:.7rem;font-weight:400">v2.0</span></div>
+  <div class="nav-pills">
+    <button class="nav-pill on" data-view="domains">도메인 추천</button>
+    <button class="nav-pill" data-view="pipeline">API 구조</button>
+  </div>
+  <div class="nav-status">
+    <div class="dot"></div>
+    <span id="nav-status-text">대기 중</span>
+  </div>
+</nav>
+</div>
+
+<!-- PIPELINE VIEW -->
+<div class="wrap" id="view-pipeline" style="display:none">
+  <div class="pipeline-section">
+    <div class="pipeline-title">// 실제 서비스 데이터 파이프라인 구조</div>
+
+    <div class="pipeline">
+      <div class="pipe-step" id="ps1">
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-num">01</div>
+        <div class="pipe-source">WhoisXML API</div>
+        <div class="pipe-desc">매일 만료되는 도메인 목록 수집<br>백링크 수, 도메인 나이, Alexa 순위 포함</div>
+        <span class="pipe-badge badge-free">무료 500건/월</span>
+      </div>
+      <div class="pipe-step" id="ps2">
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-num">02</div>
+        <div class="pipe-source">GoDaddy Auctions API</div>
+        <div class="pipe-desc">경매 중인 만료 도메인 추가 수집<br>현재 입찰가, 만료일 포함</div>
+        <span class="pipe-badge badge-paid">API 키 필요</span>
+      </div>
+      <div class="pipe-step" id="ps3">
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-num">03</div>
+        <div class="pipe-source">Google Trends API</div>
+        <div class="pipe-desc">키워드 트렌드 점수 조회<br>최근 30일 상승 키워드 매칭</div>
+        <span class="pipe-badge badge-free">무료</span>
+      </div>
+      <div class="pipe-step" id="ps4">
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-num">04</div>
+        <div class="pipe-source">Claude AI 분석</div>
+        <div class="pipe-desc">수집 데이터 종합 점수화<br>추천 이유 생성, 예상 시세 산정</div>
+        <span class="pipe-badge badge-ai">Claude API</span>
+      </div>
+      <div class="pipe-step" id="ps5">
+        <div class="pipe-num">05</div>
+        <div class="pipe-source">사용자에게 전달</div>
+        <div class="pipe-desc">웹 대시보드 & 이메일 뉴스레터<br>제휴 링크로 수익 발생</div>
+        <span class="pipe-badge badge-free">수익화</span>
+      </div>
+    </div>
+
+    <div style="margin-top:24px; background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:20px 24px;">
+      <div class="pipeline-title" style="margin-bottom:16px">// 구현 로드맵</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px;">
+        <div style="padding:14px; background:var(--s2); border-radius:8px; border:1px solid var(--border)">
+          <div style="font-family:var(--mono); font-size:.65rem; color:var(--g); margin-bottom:6px; text-transform:uppercase">Phase 1 · 지금 가능</div>
+          <div style="font-size:.78rem; color:var(--text); line-height:1.6">✓ Claude AI 분석 엔진<br>✓ 데모 도메인 데이터<br>✓ 필터 & 점수 UI<br>✓ 이메일 구독 폼</div>
+        </div>
+        <div style="padding:14px; background:var(--s2); border-radius:8px; border:1px solid var(--border)">
+          <div style="font-family:var(--mono); font-size:.65rem; color:var(--g2); margin-bottom:6px; text-transform:uppercase">Phase 2 · 1~2주</div>
+          <div style="font-size:.78rem; color:var(--text); line-height:1.6">→ WhoisXML API 연결<br>→ Cron 자동화 (매일 6AM)<br>→ 이메일 발송 (Resend)<br>→ 도메인 DB 저장</div>
+        </div>
+        <div style="padding:14px; background:var(--s2); border-radius:8px; border:1px solid var(--border)">
+          <div style="font-family:var(--mono); font-size:.65rem; color:var(--warn); margin-bottom:6px; text-transform:uppercase">Phase 3 · 수익화</div>
+          <div style="font-size:.78rem; color:var(--text); line-height:1.6">→ 제휴 링크 트래킹<br>→ 프리미엄 Top 3 잠금<br>→ GoDaddy 경매 연동<br>→ 알림 기능 (Slack/텔레그램)</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px; background:var(--s1); border:1px solid var(--border); border-radius:10px; padding:20px 24px;">
+      <div class="pipeline-title" style="margin-bottom:14px">// 실제 API 연동 코드 스니펫</div>
+      <pre style="font-family:var(--mono); font-size:0.7rem; color:#7aadcc; line-height:1.7; overflow-x:auto; padding:4px 0"><span style="color:var(--sub)">// 1. WhoisXML — 만료 도메인 수집</span>
+<span style="color:var(--g2)">const</span> <span style="color:var(--text)">expiredDomains</span> = <span style="color:var(--g2)">await</span> fetch(
+  <span style="color:#a8d8a0">`https://domains-subdomains.whoisxmlapi.com/api/v1
+   ?apiKey=YOUR_KEY&domainName=*.com&mode=purchase`</span>
+);
+
+<span style="color:var(--sub)">// 2. Google Trends — 키워드 점수</span>
+<span style="color:var(--g2)">const</span> <span style="color:var(--text)">trendScore</span> = <span style="color:var(--g2)">await</span> <span style="color:var(--text)">googleTrends.interestOverTime</span>({
+  keyword: domainKeyword, startTime: <span style="color:var(--g2)">new</span> Date(<span style="color:#a8d8a0">'2024-01-01'</span>)
+});
+
+<span style="color:var(--sub)">// 3. Claude AI — 종합 분석 & 점수화</span>
+<span style="color:var(--g2)">const</span> <span style="color:var(--text)">analysis</span> = <span style="color:var(--g2)">await</span> fetch(<span style="color:#a8d8a0">'https://api.anthropic.com/v1/messages'</span>, {
+  body: JSON.stringify({ model: <span style="color:#a8d8a0">'claude-sonnet-4-20250514'</span>,
+    messages: [{ role: <span style="color:#a8d8a0">'user'</span>, content: buildPrompt(domains, trends) }]
+  })
+});</pre>
+    </div>
+  </div>
+</div>
+
+<!-- DOMAINS VIEW -->
+<div class="wrap" id="view-domains">
+  <div class="main-grid">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <!-- API sources (hidden from UI) -->
+      <div class="sidebar-card" style="display:none">
+        <div class="sidebar-head">데이터 소스 <span style="color:var(--g); font-size:.6rem">● 시뮬레이션</span></div>
+        <div class="api-row">
+          <div>
+            <div class="api-name">WhoisXML API</div>
+            <div class="api-type">만료 도메인 목록</div>
+          </div>
+          <button class="api-toggle on" id="toggle-whois"></button>
+        </div>
+        <div class="api-row">
+          <div>
+            <div class="api-name">GoDaddy Auctions</div>
+            <div class="api-type">경매 도메인</div>
+          </div>
+          <button class="api-toggle on" id="toggle-godaddy"></button>
+        </div>
+        <div class="api-row">
+          <div>
+            <div class="api-name">Google Trends</div>
+            <div class="api-type">트렌드 키워드 점수</div>
+          </div>
+          <button class="api-toggle on" id="toggle-trends"></button>
+        </div>
+        <div class="api-row" style="border-bottom:none">
+          <div>
+            <div class="api-name">Claude AI 분석</div>
+            <div class="api-type">종합 점수 & 추천 이유</div>
+          </div>
+          <button class="api-toggle on" id="toggle-claude"></button>
+        </div>
+      </div>
+
+      <!-- filters -->
+      <div class="sidebar-card">
+        <div class="sidebar-head">필터</div>
+        <div class="filter-group">
+          <div class="filter-label">TLD</div>
+          <div class="filter-chips">
+            <button class="fchip on" data-f="tld" data-v="all">전체</button>
+            <button class="fchip" data-f="tld" data-v=".com">.com</button>
+            <button class="fchip" data-f="tld" data-v=".io">.io</button>
+            <button class="fchip" data-f="tld" data-v=".ai">.ai</button>
+            <button class="fchip" data-f="tld" data-v=".co">.co</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">카테고리</div>
+          <div class="filter-chips">
+            <button class="fchip on" data-f="cat" data-v="all">전체</button>
+            <button class="fchip" data-f="cat" data-v="trend">트렌드</button>
+            <button class="fchip" data-f="cat" data-v="short">5자 이하</button>
+            <button class="fchip" data-f="cat" data-v="backlink">백링크</button>
+          </div>
+        </div>
+        <div class="range-row">
+          <div class="range-label">
+            <span>최소 점수</span>
+            <span id="score-val" style="color:var(--g)">60</span>
+          </div>
+          <input type="range" min="0" max="100" value="60" id="score-range">
+        </div>
+      </div>
+
+      <!-- stats -->
+      <div class="sidebar-card" style="overflow:hidden">
+        <div class="sidebar-head">오늘 통계</div>
+        <div class="stat-grid">
+          <div class="stat-cell"><span class="stat-val" id="s-total">—</span><span class="stat-key">수집</span></div>
+          <div class="stat-cell"><span class="stat-val" id="s-picked">—</span><span class="stat-key">선별</span></div>
+          <div class="stat-cell"><span class="stat-val" id="s-avg">—</span><span class="stat-key">평균점수</span></div>
+          <div class="stat-cell"><span class="stat-val" id="s-hot">—</span><span class="stat-key">HOT</span></div>
+        </div>
+      </div>
+
+      <!-- log (hidden from UI) -->
+      <div class="log-panel" style="display:none">
+        <div class="log-head">📋 실행 로그</div>
+        <div class="log-body" id="log-body">
+          <div class="log-line">도메인 크롤링 시작 중...</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main>
+      <div class="list-header">
+        <div class="list-title">// 오늘의 추천 도메인 <span id="result-count" style="color:var(--g)"></span></div>
+        <button class="run-btn" id="run-btn">
+          <span class="run-icon" id="run-icon">▶</span>
+          AI 분석 실행
+        </button>
+      </div>
+
+      <div class="domain-list" id="domain-list">
+        <div style="text-align:center; padding:60px 20px; color:var(--sub)">
+          <div style="font-size:2rem; margin-bottom:12px">📡</div>
+          <div style="font-family:var(--mono); font-size:.8rem">오늘의 도메인을 불러오는 중...</div>
+        </div>
+      </div>
+
+      <!-- 제휴 파트너는 각 도메인 카드 안에 표시됨 -->
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let domains = [];
+let filters = { tld:'all', cat:'all', score:60 };
+let running = false;
+
+// ── Nav view switching ──────────────────────────────────
+document.querySelectorAll('.nav-pill').forEach(p => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.nav-pill').forEach(x=>x.classList.remove('on'));
+    p.classList.add('on');
+    const v = p.dataset.view;
+    document.getElementById('view-domains').style.display = v==='domains'?'block':'none';
+    document.getElementById('view-pipeline').style.display = v==='pipeline'?'block':'none';
+  });
+});
+
+// ── Toggles ─────────────────────────────────────────────
+['whois','godaddy','trends','claude'].forEach(id => {
+  document.getElementById('toggle-'+id).addEventListener('click', function(){
+    this.classList.toggle('on');
+  });
+});
+
+// ── Filters ─────────────────────────────────────────────
+document.querySelectorAll('.fchip').forEach(c => {
+  c.addEventListener('click', function(){
+    const f = this.dataset.f;
+    document.querySelectorAll(`.fchip[data-f="${f}"]`).forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');
+    filters[f] = this.dataset.v;
+    renderDomains();
+  });
+});
+
+const scoreRange = document.getElementById('score-range');
+scoreRange.addEventListener('input', function(){
+  filters.score = +this.value;
+  document.getElementById('score-val').textContent = this.value;
+  renderDomains();
+});
+
+// ── Log helper ──────────────────────────────────────────
+function log(msg, type='') {
+  const body = document.getElementById('log-body');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  const ts = new Date().toLocaleTimeString('ko-KR');
+  line.textContent = `[${ts}] ${msg}`;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function logAff(partner) {
+  log(`제휴 클릭: ${partner}`, 'ok');
+}
+
+// ── Simulate API fetch steps ───────────────────────────
+async function simulateStep(label, delay, type='info') {
+  await new Promise(r=>setTimeout(r, delay));
+  log(label, type);
+}
+
+// ── Main run ────────────────────────────────────────────
+document.getElementById('run-btn').addEventListener('click', runAnalysis);
+
+// 페이지 로드 시 자동으로 오늘 도메인 불러오기
+window.addEventListener('DOMContentLoaded', runAnalysis);
+
+async function runAnalysis() {
+  if (running) return;
+  running = true;
+  const btn = document.getElementById('run-btn');
+  const icon = document.getElementById('run-icon');
+  btn.disabled = true;
+  icon.classList.add('spin');
+  document.getElementById('nav-status-text').textContent = '크롤링 중...';
+
+  showSkeletons();
+
+  try {
+    await simulateStep('expireddomains.net → 만료 도메인 수집 중...', 500, 'info');
+    await simulateStep('규칙 기반 점수화 엔진 실행 중...', 400, 'info');
+
+    // /api/crawl 서버리스 함수 호출 (무료, AI 없음)
+    const res = await fetch('/api/crawl', { method: 'GET' });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+
+    domains = data.domains;
+
+    await simulateStep(`점수화 완료 → ${data.totalScanned}개 스캔, ${domains.length}개 선별`, 200, 'ok');
+
+    // 통계 업데이트
+    const avg = Math.round(domains.reduce((s,d)=>s+d.score,0)/domains.length);
+    const hot = domains.filter(d=>d.isHot).length;
+    document.getElementById('s-total').textContent = (data.totalScanned || 0).toLocaleString();
+    document.getElementById('s-picked').textContent = domains.length;
+    document.getElementById('s-avg').textContent = avg;
+    document.getElementById('s-hot').textContent = hot;
+    document.getElementById('nav-status-text').textContent = `${domains.length}개 추천 완료 · ${data.date}`;
+
+    log(`완료 — ${domains.length}개 추천 (평균 ${avg}점) · 업데이트: ${data.date}`, 'ok');
+
+    renderDomains();
+
+  } catch(e) {
+    log('❌ 오류: ' + e.message, 'warn');
+    document.getElementById('nav-status-text').textContent = '오류 발생';
+    document.getElementById('domain-list').innerHTML = `
+      <div style="text-align:center;padding:40px;color:var(--sub)">
+        <div style="font-size:1.5rem;margin-bottom:12px">⚠️</div>
+        <div style="font-family:var(--mono);font-size:.78rem;line-height:1.8;color:var(--text)">
+          로드 실패: <span style="color:var(--warn)">${e.message}</span>
+        </div>
+        <button onclick="runAnalysis()" style="margin-top:16px;padding:8px 20px;background:var(--g);color:var(--bg);border:none;border-radius:6px;font-family:var(--mono);font-size:.7rem;font-weight:700;cursor:pointer">↺ 다시 시도</button>
+      </div>`;
+  } finally {
+    running = false;
+    btn.disabled = false;
+    icon.classList.remove('spin');
+    icon.textContent = '↺';
+  }
+}
+
+// ── Partners data ────────────────────────────────────────
+const PARTNERS = [
+  { id:'gabia',    label:'가비아',      flag:'🇰🇷', cls:'kr',       url:'https://www.gabia.com' },
+  { id:'cafe24',   label:'카페24',      flag:'🇰🇷', cls:'kr',       url:'https://hosting.cafe24.com' },
+  { id:'dothome',  label:'닷홈',        flag:'🇰🇷', cls:'kr',       url:'https://www.dothome.co.kr' },
+  { id:'dotname',  label:'닷네임',      flag:'🇰🇷', cls:'kr',       url:'https://www.dotname.co.kr' },
+  { id:'namecheap',label:'Namecheap',   flag:'🌐', cls:'',         url:'https://www.namecheap.com' },
+  { id:'godaddy',  label:'GoDaddy',     flag:'🌐', cls:'',         url:'https://www.godaddy.com' },
+  { id:'hostinger',label:'Hostinger',   flag:'🌐', cls:'featured', url:'https://www.hostinger.com' },
+  { id:'dynadot',  label:'Dynadot',     flag:'🌐', cls:'',         url:'https://www.dynadot.com' },
+];
+
+// 도메인별로 4개 파트너를 랜덤 선택 (KR 2개 + 글로벌 2개 균형)
+function getPartnersForDomain(index) {
+  const kr = PARTNERS.filter(p=>p.cls==='kr');
+  const global = PARTNERS.filter(p=>p.cls!=='kr');
+  const shuffle = arr => [...arr].sort(()=>Math.sin(index * 9.7 + arr.indexOf(arr[0])) - .5);
+  return [...shuffle(kr).slice(0,2), ...shuffle(global).slice(0,2)];
+}
+
+// ── Render ──────────────────────────────────────────────
+function renderDomains() {
+  const list = document.getElementById('domain-list');
+  let filtered = domains.filter(d => {
+    if (filters.tld !== 'all' && !d.domain.endsWith(filters.tld)) return false;
+    if (filters.cat === 'trend' && !d.tags.includes('trend')) return false;
+    if (filters.cat === 'short' && baseName(d.domain).length > 5) return false;
+    if (filters.cat === 'backlink' && !d.tags.includes('backlink')) return false;
+    if (d.score < filters.score) return false;
+    return true;
+  });
+
+  // sort by score desc
+  filtered.sort((a,b)=>b.score-a.score);
+
+  document.getElementById('result-count').textContent = filtered.length ? `(${filtered.length}개)` : '';
+
+  if (!filtered.length) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--sub)">
+      <div style="font-family:var(--mono);font-size:.78rem">해당 조건의 도메인이 없습니다.</div></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map((d,i) => {
+    const rankClass = i===0?'rank1':i===1?'rank2':i===2?'rank3':'';
+    const gradeClass = d.grade==='A'?'ring-a':d.grade==='B'?'ring-b':'ring-c';
+    const circumference = 2 * Math.PI * 18;
+    const offset = circumference - (d.score/100)*circumference;
+    const srcClass = d.source==='whois'?'src-whois':d.source==='godaddy'?'src-godaddy':'src-sim';
+    const srcLabel = d.source==='whois'?'WhoisXML':d.source==='godaddy'?'GoDaddy':'시뮬레이션';
+    const partners = getPartnersForDomain(i);
+    const partnerPills = partners.map(p =>
+      `<a class="d-partner-pill ${p.cls}" href="${p.url}" target="_blank" onclick="logAff('${p.id}')">
+        <span>${p.flag}</span>${p.label}
+      </a>`
+    ).join('');
+
+    return `
+    <div class="d-card ${rankClass}" id="card-${i}">
+      <div class="d-main">
+        <div class="d-rank">#${i+1}</div>
+
+        <div class="d-score-ring">
+          <svg viewBox="0 0 40 40">
+            <circle class="ring-bg" cx="20" cy="20" r="18"/>
+            <circle class="${gradeClass} ring-fill" cx="20" cy="20" r="18"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"/>
+          </svg>
+          <div class="d-score-num" style="color:${d.grade==='A'?'var(--g)':d.grade==='B'?'var(--g2)':'var(--warn)'}">${d.score}</div>
+        </div>
+
+        <div class="d-info">
+          <div class="d-name">${fmtDomain(d.domain)} ${d.isHot?'<span style="font-size:.6rem;background:rgba(255,79,107,.15);color:var(--hot);padding:2px 6px;border-radius:3px;font-family:var(--mono);letter-spacing:.4px">🔥 HOT</span>':''}</div>
+          <div class="d-tags">
+            ${d.tags.map(t=>`<span class="dtag dtag-${t}">${tagLbl(t)}</span>`).join('')}
+            <span class="d-source ${srcClass}">${srcLabel}</span>
+          </div>
+        </div>
+
+        <div class="d-metrics">
+          <div class="d-metric">
+            <span class="d-mval">${d.regPrice}</span>
+            <span class="d-mkey">등록가</span>
+          </div>
+          <div class="d-metric">
+            <span class="d-mval" style="color:var(--g)">${d.estValue.split('~')[0]}</span>
+            <span class="d-mkey">예상 최저</span>
+          </div>
+          <div class="d-metric">
+            <span class="d-mval">${d.backlinks}</span>
+            <span class="d-mkey">백링크</span>
+          </div>
+        </div>
+
+        <div class="d-action">
+          <button class="btn-copy" onclick="copyD('${d.domain}', this)">복사</button>
+          <button class="btn-copy" onclick="toggleExpand(${i})">▾</button>
+        </div>
+      </div>
+
+      <div class="d-partners">
+        <span class="d-partner-label">등록</span>
+        ${partnerPills}
+      </div>
+
+      <div class="d-expand" id="expand-${i}">
+        <div class="d-reason">"${d.reason}"</div>
+        <div class="d-data-row">
+          <div class="d-datum"><div class="d-datum-label">검색량</div><div class="d-datum-val">${d.searchVol}</div></div>
+          <div class="d-datum"><div class="d-datum-label">도메인 나이</div><div class="d-datum-val">${d.domainAge}</div></div>
+          <div class="d-datum"><div class="d-datum-label">산업군</div><div class="d-datum-val">${d.industry}</div></div>
+          <div class="d-datum"><div class="d-datum-label">예상 시세</div><div class="d-datum-val" style="color:var(--g)">${d.estValue}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExpand(i) {
+  const el = document.getElementById('expand-'+i);
+  el.classList.toggle('open');
+}
+
+function fmtDomain(domain) {
+  const m = domain.match(/(\.[a-z]+)$/);
+  if (!m) return domain;
+  return domain.slice(0, -m[1].length) + `<span class="tld">${m[1]}</span>`;
+}
+
+function baseName(domain) {
+  return domain.replace(/\.[a-z]+$/, '');
+}
+
+function tagLbl(t) {
+  const m = { trend:'📈 트렌드', seo:'🔍 SEO', short:'⚡ 단어수', backlink:'🔗 백링크', dict:'📖 사전' };
+  return m[t] || t;
+}
+
+function copyD(domain, btn) {
+  navigator.clipboard.writeText(domain).then(() => {
+    btn.textContent = '✓';
+    setTimeout(()=>{ btn.textContent='복사'; }, 1500);
+  });
+}
+
+function showSkeletons() {
+  const list = document.getElementById('domain-list');
+  list.innerHTML = Array(6).fill(0).map(()=>`
+    <div class="skel">
+      <div class="skel-bar" style="height:12px;width:40%"></div>
+      <div class="skel-bar" style="height:10px;width:60%"></div>
+      <div class="skel-bar" style="height:36px;width:100%"></div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
