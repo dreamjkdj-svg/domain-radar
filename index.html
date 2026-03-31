@@ -1359,7 +1359,7 @@ function showSkeletons() {
       <div class="plan-card sel">
         <div class="plan-name">월간</div>
         <div class="plan-price">$2</div>
-        <div class="plan-unit">()</div>
+        <div class="plan-unit">/월 (≈ ₩2,900)</div>
       </div>
       <div class="plan-card">
         <div class="plan-name">연간</div>
@@ -1411,6 +1411,9 @@ function renderAuth() {
   const nav = document.getElementById('nav-auth');
   const aiBtn = document.getElementById('btn-ai');
 
+  // AI 버튼은 항상 표시 — Pro 아니면 클릭 시 모달 오픈
+  if (aiBtn) aiBtn.style.display = 'flex';
+
   if (isPro()) {
     nav.innerHTML = `
       <div class="user-chip">
@@ -1418,11 +1421,11 @@ function renderAuth() {
         <span class="pro-chip">PRO</span>
       </div>
       <button class="btn-login" onclick="logoutPro()">해제</button>`;
-    if (aiBtn) aiBtn.style.display = 'flex';
+    if (aiBtn) aiBtn.style.opacity = '1';
   } else {
     nav.innerHTML = `
       <button class="btn-upgrade" onclick="openModal('pricing')">⭐ Pro 시작하기</button>`;
-    if (aiBtn) aiBtn.style.display = 'none';
+    if (aiBtn) aiBtn.style.opacity = '0.7';
   }
 }
 
