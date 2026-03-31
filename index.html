@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DomainRadar v2 — Real API Architecture</title>
+<title>DomainRadar — 매일 황금 도메인 추천</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Epilogue:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
@@ -687,6 +687,147 @@ input[type=range] {
   .d-action { padding-left:20px; }
   .d-expand { padding-left:20px; }
 }
+
+/* ── 멤버십 & 인증 UI ─────────────────── */
+.nav-auth { display:flex; align-items:center; gap:8px; }
+
+.btn-login {
+  padding:5px 14px;
+  background:transparent; border:1px solid var(--border2);
+  color:var(--sub); font-family:var(--mono); font-size:0.65rem;
+  border-radius:5px; cursor:pointer; transition:.15s;
+}
+.btn-login:hover { border-color:var(--g); color:var(--g); }
+
+.btn-upgrade {
+  padding:5px 14px;
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  color:var(--bg); border:none; font-family:var(--mono);
+  font-size:0.65rem; font-weight:700; border-radius:5px;
+  cursor:pointer; transition:.15s;
+}
+.btn-upgrade:hover { opacity:.85; }
+
+.user-chip {
+  display:flex; align-items:center; gap:6px;
+  padding:4px 10px; background:var(--s2);
+  border:1px solid var(--border2); border-radius:5px;
+  font-family:var(--mono); font-size:0.6rem; color:var(--sub);
+}
+.pro-chip {
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  color:var(--bg); padding:1px 6px; border-radius:3px;
+  font-size:0.55rem; font-weight:700;
+}
+
+/* Pro AI 분석 버튼 */
+.btn-ai {
+  display:flex; align-items:center; gap:7px;
+  padding:9px 16px;
+  background:rgba(0,212,170,.08);
+  border:1px solid rgba(0,212,170,.3); color:var(--g);
+  font-family:var(--mono); font-size:0.7rem; font-weight:700;
+  border-radius:6px; cursor:pointer; transition:.15s;
+}
+.btn-ai:hover { background:rgba(0,212,170,.15); }
+.btn-ai:disabled { opacity:.4; cursor:not-allowed; }
+.btn-ai .ai-tag {
+  font-size:.52rem; background:linear-gradient(135deg,var(--g),var(--g2));
+  color:var(--bg); padding:1px 5px; border-radius:3px; font-weight:700;
+}
+
+/* AI 분석 결과 확장 패널 추가 필드 */
+.ai-panel {
+  border-top:1px solid rgba(0,212,170,.15);
+  padding:14px 20px;
+  background:rgba(0,212,170,.03);
+}
+.ai-panel-title {
+  font-family:var(--mono); font-size:.6rem; color:var(--g);
+  text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;
+  display:flex; align-items:center; gap:6px;
+}
+.ai-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; margin-bottom:10px; }
+.ai-datum { background:var(--s2); border:1px solid rgba(0,212,170,.15); border-radius:6px; padding:8px 12px; }
+.ai-datum-label { font-family:var(--mono); font-size:.56rem; color:var(--sub); text-transform:uppercase; margin-bottom:3px; }
+.ai-datum-val { font-family:var(--mono); font-size:.78rem; font-weight:700; color:var(--text); }
+.ai-reason-detail {
+  font-size:.75rem; color:#7aadcc; line-height:1.6;
+  border-left:2px solid var(--g); padding-left:10px; font-style:italic;
+}
+
+/* Pro 잠금 오버레이 */
+.pro-lock-wrap { position:relative; }
+.pro-lock-wrap .lock-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to bottom, transparent 20%, rgba(5,8,11,.96) 80%);
+  border-radius:10px; z-index:5;
+  display:flex; align-items:flex-end; justify-content:center; padding-bottom:20px;
+}
+.lock-btn {
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  color:var(--bg); border:none; font-family:var(--mono);
+  font-size:.65rem; font-weight:700; padding:8px 20px;
+  border-radius:20px; cursor:pointer; transition:.15s;
+  white-space:nowrap;
+}
+.lock-btn:hover { opacity:.85; transform:scale(1.03); }
+
+/* 모달 */
+.modal-bg {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.75); backdrop-filter:blur(6px);
+  z-index:200; align-items:center; justify-content:center;
+}
+.modal-bg.open { display:flex; }
+.modal-box {
+  background:var(--s1); border:1px solid var(--border2);
+  border-radius:16px; padding:32px;
+  width:100%; max-width:460px; position:relative;
+}
+.modal-x {
+  position:absolute; top:14px; right:14px;
+  background:transparent; border:none; color:var(--sub);
+  font-size:1.1rem; cursor:pointer; line-height:1;
+}
+.modal-h { font-family:var(--mono); font-size:1rem; font-weight:700; margin-bottom:6px; }
+.modal-sub { font-size:.78rem; color:var(--sub); margin-bottom:24px; line-height:1.5; }
+
+/* 요금제 카드 */
+.plan-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.plan-card {
+  border:1px solid var(--border2); border-radius:10px;
+  padding:18px; cursor:pointer; transition:.15s; text-align:center;
+}
+.plan-card.sel, .plan-card:hover { border-color:var(--g); background:rgba(0,212,170,.06); }
+.plan-name { font-family:var(--mono); font-size:.62rem; color:var(--sub); text-transform:uppercase; margin-bottom:6px; }
+.plan-price { font-family:var(--mono); font-size:1.4rem; font-weight:700; }
+.plan-unit { font-size:.62rem; color:var(--sub); margin-top:2px; }
+.plan-save { font-size:.6rem; color:var(--g); margin-top:4px; font-weight:700; }
+.plan-btn {
+  width:100%; padding:11px; margin-top:4px;
+  background:linear-gradient(135deg,var(--g),var(--g2));
+  color:var(--bg); border:none; border-radius:8px;
+  font-family:var(--mono); font-size:.72rem; font-weight:700;
+  cursor:pointer; transition:.15s;
+}
+.plan-btn:hover { opacity:.85; }
+.feat-list { list-style:none; font-size:.72rem; color:var(--sub); line-height:2; }
+.feat-list li::before { content:'✓ '; color:var(--g); font-weight:700; }
+.feat-list li.pro::before { content:'★ '; color:var(--warn); }
+
+/* 알림 토스트 */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+  background:var(--s1); border:1px solid var(--border2);
+  padding:12px 24px; border-radius:8px;
+  font-family:var(--mono); font-size:.72rem; color:var(--text);
+  transition:.3s; z-index:300; white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.ok { border-color:var(--g); color:var(--g); }
+.toast.err { border-color:var(--hot); color:var(--hot); }
 </style>
 </head>
 <body>
@@ -694,14 +835,19 @@ input[type=range] {
 <!-- NAV -->
 <div class="wrap">
 <nav>
-  <div class="nav-logo">Domain<b>Radar</b> <span style="color:var(--sub);font-size:.7rem;font-weight:400">v2.0</span></div>
+  <div class="nav-logo">Domain<b>Radar</b></div>
   <div class="nav-pills">
     <button class="nav-pill on" data-view="domains">도메인 추천</button>
-    <button class="nav-pill" data-view="pipeline">.</button>
+    <button class="nav-pill" data-view="pipeline">API 구조</button>
   </div>
-  <div class="nav-status">
-    <div class="dot"></div>
-    <span id="nav-status-text">대기 중</span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="nav-status">
+      <div class="dot"></div>
+      <span id="nav-status-text">대기 중</span>
+    </div>
+    <div class="nav-auth" id="nav-auth">
+      <!-- JS로 채워짐 -->
+    </div>
   </div>
 </nav>
 </div>
@@ -1144,6 +1290,22 @@ function renderDomains() {
           <div class="d-datum"><div class="d-datum-label">산업군</div><div class="d-datum-val">${d.industry}</div></div>
           <div class="d-datum"><div class="d-datum-label">예상 시세</div><div class="d-datum-val" style="color:var(--g)">${d.estValue}</div></div>
         </div>
+
+        ${d.hasAIAnalysis ? `
+        <div class="ai-panel">
+          <div class="ai-panel-title">✦ AI 심층 분석</div>
+          <div class="ai-grid">
+            <div class="ai-datum"><div class="ai-datum-label">수익 가능성</div><div class="ai-datum-val">${d.profitPotential||'—'}</div></div>
+            <div class="ai-datum"><div class="ai-datum-label">AI 예상 시세</div><div class="ai-datum-val" style="color:var(--g)">${d.estValueAI||d.estValue}</div></div>
+            <div class="ai-datum"><div class="ai-datum-label">판매 기간</div><div class="ai-datum-val">${d.timeToSell||'—'}</div></div>
+            <div class="ai-datum"><div class="ai-datum-label">위험 수준</div><div class="ai-datum-val">${d.riskLevel||'—'}</div></div>
+          </div>
+          <div class="ai-reason-detail">${d.detailedReason||''}<br><small style="opacity:.7">타겟 바이어: ${d.targetBuyers||'—'} · 전략: ${d.sellStrategy||'—'}</small></div>
+        </div>` : `
+        <div style="border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-family:var(--mono);font-size:.65rem;color:var(--sub)">✦ AI 심층 분석 — Pro 전용</span>
+          <button class="lock-btn" style="padding:5px 14px;font-size:.62rem" onclick="openModal('pricing')">⭐ Pro로 업그레이드</button>
+        </div>`}
       </div>
     </div>`;
   }).join('');
@@ -1186,5 +1348,180 @@ function showSkeletons() {
     </div>`).join('');
 }
 </script>
+<!-- 요금제/로그인 모달 -->
+<!-- 요금제 모달 -->
+<div class="modal-bg" id="modal-pricing">
+  <div class="modal-box">
+    <button class="modal-x" onclick="closeModal('pricing')">✕</button>
+    <div class="modal-h">🚀 DomainRadar Pro</div>
+    <div class="modal-sub">AI 심층 분석으로 더 높은 수익을 노리세요</div>
+    <div class="plan-row">
+      <div class="plan-card sel">
+        <div class="plan-name">월간</div>
+        <div class="plan-price">$7</div>
+        <div class="plan-unit">/월 (≈ ₩9,900)</div>
+      </div>
+      <div class="plan-card">
+        <div class="plan-name">연간</div>
+        <div class="plan-price">$70</div>
+        <div class="plan-unit">/년</div>
+        <div class="plan-save">2개월 무료</div>
+      </div>
+    </div>
+    <ul class="feat-list" style="margin-bottom:20px">
+      <li>매일 만료 도메인 자동 수집</li>
+      <li>규칙 기반 점수화 (무료 포함)</li>
+      <li class="pro">AI 심층 분석 — 수익 가능성, 타겟 바이어</li>
+      <li class="pro">예상 시세 정밀 분석</li>
+      <li class="pro">위험 요소 & 상표권 체크</li>
+      <li class="pro">판매 전략 추천</li>
+    </ul>
+    <a class="plan-btn" id="checkout-btn" href="https://onlinemarketinglab.gumroad.com/l/domainradar-pro" target="_blank" onclick="closeModal('pricing')">
+      Gumroad로 구독하기 →
+    </a>
+    <div style="text-align:center;margin-top:10px">
+      <button onclick="closeModal('pricing'); showKeyModal();" style="background:transparent;border:none;color:var(--g);font-family:var(--mono);font-size:.65rem;cursor:pointer;text-decoration:underline">
+        이미 구독했나요? 라이선스 키 입력 →
+      </button>
+    </div>
+    <div style="text-align:center;margin-top:8px;font-size:.65rem;color:var(--sub)">
+      언제든 취소 가능 · Gumroad 안전 결제
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 상수 ───────────────────────────────────────────────────
+const GUMROAD_URL = 'https://onlinemarketinglab.gumroad.com/l/domainradar-pro'; // ← Gumroad URL 교체
+
+// ── Pro 여부 확인 (Gumroad 라이선스 키) ────────────────────
+// Gumroad 구독 후 받은 라이선스 키를 로컬스토리지에 저장
+let proKey = localStorage.getItem('dr_pro_key') || '';
+let proDomainsAnalyzed = false;
+
+function isPro() {
+  // 라이선스 키가 있으면 Pro로 간주 (실제 검증은 서버에서)
+  return proKey.length > 0;
+}
+
+// ── nav 렌더링 ─────────────────────────────────────────────
+function renderAuth() {
+  const nav = document.getElementById('nav-auth');
+  const aiBtn = document.getElementById('btn-ai');
+
+  if (isPro()) {
+    nav.innerHTML = `
+      <div class="user-chip">
+        Pro 멤버
+        <span class="pro-chip">PRO</span>
+      </div>
+      <button class="btn-login" onclick="logoutPro()">해제</button>`;
+    if (aiBtn) aiBtn.style.display = 'flex';
+  } else {
+    nav.innerHTML = `
+      <button class="btn-upgrade" onclick="openModal('pricing')">⭐ Pro 시작하기</button>`;
+    if (aiBtn) aiBtn.style.display = 'none';
+  }
+}
+
+// ── 라이선스 키 입력 모달 ──────────────────────────────────
+function showKeyModal() {
+  const key = prompt('Gumroad 구독 후 받은 라이선스 키를 입력하세요:');
+  if (!key) return;
+  localStorage.setItem('dr_pro_key', key.trim());
+  proKey = key.trim();
+  renderAuth();
+  showToast('✅ Pro 멤버십 활성화!', 'ok');
+}
+
+function logoutPro() {
+  if (!confirm('Pro 멤버십을 해제하시겠어요?')) return;
+  localStorage.removeItem('dr_pro_key');
+  proKey = '';
+  proDomainsAnalyzed = false;
+  renderAuth();
+  renderDomains();
+}
+
+// ── 모달 ───────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById('modal-' + id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById('modal-' + id).classList.remove('open');
+}
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── Pro AI 심층 분석 ───────────────────────────────────────
+document.getElementById('btn-ai')?.addEventListener('click', runProAnalysis);
+
+async function runProAnalysis() {
+  if (!domains.length) return showToast('먼저 도메인을 불러오세요', 'err');
+  if (!isPro()) { openModal('pricing'); return; }
+
+  const btn = document.getElementById('btn-ai');
+  const icon = document.getElementById('ai-icon');
+  btn.disabled = true;
+  icon.textContent = '⏳';
+
+  try {
+    const res = await fetch('/api/analyze-pro', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Pro-Key': proKey,
+      },
+      body: JSON.stringify({ domains }),
+    });
+    const data = await res.json();
+
+    if (res.status === 403) {
+      showToast('라이선스 키가 유효하지 않아요', 'err');
+      openModal('pricing');
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || 'AI 분석 실패');
+
+    domains = data.domains;
+    proDomainsAnalyzed = true;
+    renderDomains();
+    showToast('✦ AI 심층 분석 완료!', 'ok');
+
+  } catch (e) {
+    showToast('오류: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    icon.textContent = '✦';
+  }
+}
+
+// ── 토스트 ─────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => { t.className = 'toast'; }, 2800);
+}
+
+// ── 초기화 ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  renderAuth();
+
+  // Gumroad 결제 후 리디렉션 처리
+  const params = new URLSearchParams(location.search);
+  if (params.get('payment') === 'success') {
+    history.replaceState({}, '', '/');
+    setTimeout(() => {
+      showToast('🎉 결제 완료! 라이선스 키를 입력해 Pro를 활성화하세요', 'ok');
+      showKeyModal();
+    }, 500);
+  }
+});
+</script>
+
 </body>
 </html>
