@@ -106,10 +106,13 @@ export async function onRequest(context) {
 
   try {
     const domains = generateDomains();
+    const today = new Date().toLocaleDateString('ko-KR');
     return new Response(JSON.stringify({
       domains,
       generatedAt: new Date().toISOString(),
       count: domains.length,
+      totalScanned: 500,
+      date: today,
     }), { status: 200, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers });
