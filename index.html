@@ -1265,7 +1265,7 @@ function renderDomains() {
 
         <div class="d-metrics">
           <div class="d-metric">
-            <span class="d-mval">${d.regPrice}</span>
+            <span class="d-mval">${d.regPrice || "$8~$15"}</span>
             <span class="d-mkey">등록가</span>
           </div>
           <div class="d-metric">
@@ -1273,7 +1273,7 @@ function renderDomains() {
             <span class="d-mkey">예상 최저</span>
           </div>
           <div class="d-metric">
-            <span class="d-mval">${d.backlinks}</span>
+            <span class="d-mval">${d.backlinks || "—"}</span>
             <span class="d-mkey">백링크</span>
           </div>
         </div>
