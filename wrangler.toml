@@ -1,0 +1,7 @@
+name = "domain-radar"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
+
+# Cron 트리거 — 매일 KST 06:00 (UTC 21:00)
+[[triggers.crons]]
+crons = ["0 21 * * *"]

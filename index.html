@@ -1029,10 +1029,17 @@ input[type=range] {
     <main>
       <div class="list-header">
         <div class="list-title">// 오늘의 추천 도메인 <span id="result-count" style="color:var(--g)"></span></div>
-        <button class="run-btn" id="run-btn">
-          <span class="run-icon" id="run-icon">▶</span>
-          AI 분석 실행
-        </button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn-ai" id="btn-ai">
+            <span id="ai-icon">✦</span>
+            AI 심층 분석
+            <span class="ai-tag">PRO</span>
+          </button>
+          <button class="run-btn" id="run-btn">
+            <span class="run-icon" id="run-icon">↺</span>
+            새로고침
+          </button>
+        </div>
       </div>
 
       <div class="domain-list" id="domain-list">
