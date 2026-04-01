@@ -56,13 +56,24 @@ function scoreDomain(domain) {
   else if (sld.length <= 8) score += 8;
   if (/^[a-z]+$/.test(sld)) score += 5;
 
+  const finalScore = Math.min(score, 99);
+  const estLow = Math.round(finalScore * 3);
+  const estHigh = Math.round(finalScore * 15);
+
   return {
     domain,
-    score: Math.min(score, 99),
+    score: finalScore,
     industry: industry || '기타',
     tags: tags.slice(0, 3),
     tld,
     partners: PARTNER_LINKS,
+    isHot: finalScore >= 80,
+    estValue: `$${estLow}~$${estHigh}`,
+    profitPotential: finalScore >= 80 ? '높음' : finalScore >= 60 ? '중간' : '낮음',
+    riskLevel: '분석 전',
+    targetBuyers: industry || '기타',
+    sellStrategy: 'Sedo, Afternic 등록 추천',
+    detailedReason: `${tags.join(', ')} 키워드 포함, ${tld} 도메인`,
   };
 }
 
