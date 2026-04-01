@@ -1292,9 +1292,9 @@ function renderDomains() {
       <div class="d-expand" id="expand-${i}">
         <div class="d-reason">"${d.reason}"</div>
         <div class="d-data-row">
-          <div class="d-datum"><div class="d-datum-label">검색량</div><div class="d-datum-val">${d.searchVol}</div></div>
-          <div class="d-datum"><div class="d-datum-label">도메인 나이</div><div class="d-datum-val">${d.domainAge}</div></div>
-          <div class="d-datum"><div class="d-datum-label">산업군</div><div class="d-datum-val">${d.industry}</div></div>
+          <div class="d-datum"><div class="d-datum-label">검색량</div><div class="d-datum-val" style="color:var(--sub);filter:blur(3px)">🔒 Pro</div></div>
+          <div class="d-datum"><div class="d-datum-label">도메인 나이</div><div class="d-datum-val" style="color:var(--sub);filter:blur(3px)">🔒 Pro</div></div>
+          <div class="d-datum"><div class="d-datum-label">산업군</div><div class="d-datum-val">${d.industry||'기타'}</div></div>
           <div class="d-datum"><div class="d-datum-label">예상 시세</div><div class="d-datum-val" style="color:var(--g)">${d.estValue}</div></div>
         </div>
 
@@ -1307,7 +1307,7 @@ function renderDomains() {
             <div class="ai-datum"><div class="ai-datum-label">판매 기간</div><div class="ai-datum-val">${d.timeToSell||'—'}</div></div>
             <div class="ai-datum"><div class="ai-datum-label">위험 수준</div><div class="ai-datum-val">${d.riskLevel||'—'}</div></div>
           </div>
-          <div class="ai-reason-detail">${d.detailedReason||''}<br><small style="opacity:.7">타겟 바이어: ${d.targetBuyers||'—'} · 전략: ${d.sellStrategy||'—'}</small></div>
+          <div class="ai-reason-detail">${d.detailedReason||'AI 분석 결과가 여기에 표시됩니다.'}<br><small style="opacity:.7">타겟 바이어: ${d.targetBuyers||'—'} · 전략: ${d.sellStrategy||'—'}</small></div>
         </div>` : `
         <div style="border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
           <span style="font-family:var(--mono);font-size:.65rem;color:var(--sub)">✦ AI 심층 분석 — Pro 전용</span>
