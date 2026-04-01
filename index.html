@@ -1316,8 +1316,10 @@ function renderDomains() {
         </div>` : `
         <div style="padding:14px 20px;background:linear-gradient(135deg,rgba(0,212,170,.03),rgba(0,168,255,.03));border-top:1px solid rgba(0,212,170,.12);">
 
-          <!-- 상단: 공개 정보 1개 + 잠긴 정보 3개 -->
+          <!-- AI 심층 분석 헤더 -->
           <div style="font-family:var(--mono);font-size:.6rem;color:var(--g);font-weight:700;margin-bottom:10px;letter-spacing:.5px">✦ AI 심층 분석</div>
+
+          <!-- 4개 항목: 산업군+수익가능성 공개, 나머지 부분 블러 -->
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
 
             <!-- 공개: 산업군 -->
@@ -1326,38 +1328,52 @@ function renderDomains() {
               <div style="font-size:.75rem;font-weight:700;color:var(--g)">${d.industry||'AI/테크'}</div>
             </div>
 
-            <!-- 잠김: 수익 가능성 -->
-            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;cursor:pointer" onclick="openModal('pricing')">
+            <!-- 공개: 수익 가능성 -->
+            <div style="background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:8px 10px;">
               <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">수익 가능성</div>
-              <div style="font-size:.75rem;font-weight:700;color:var(--g);filter:blur(5px);user-select:none">${d.score>=75?'높음 ★★★':'중간 ★★☆'}</div>
+              <div style="font-size:.75rem;font-weight:700;color:${d.score>=75?'var(--g)':'var(--warn)'}">${d.score>=75?'높음':'중간'}</div>
             </div>
 
-            <!-- 잠김: AI 예상 시세 -->
-            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;cursor:pointer" onclick="openModal('pricing')">
-              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">AI 예상 시세</div>
-              <div style="font-size:.75rem;font-weight:700;color:var(--g);filter:blur(5px);user-select:none">$${Math.round(d.score*12)}~$${Math.round(d.score*55)}</div>
+            <!-- 공개: AI 예상 최저 시세 -->
+            <div style="background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:8px 10px;">
+              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">예상 최저가</div>
+              <div style="font-size:.75rem;font-weight:700;color:var(--g)">$${Math.round(d.score*12)}~</div>
             </div>
 
-            <!-- 잠김: 타겟 바이어 -->
-            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;cursor:pointer" onclick="openModal('pricing')">
-              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">타겟 바이어</div>
-              <div style="font-size:.75rem;font-weight:700;color:var(--text);filter:blur(5px);user-select:none">${d.industry||'AI'} 스타트업</div>
+            <!-- 잠김: 최고 예상 시세 -->
+            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;cursor:pointer;position:relative;overflow:hidden" onclick="openModal('pricing')">
+              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">최고 예상가</div>
+              <div style="font-size:.75rem;font-weight:700;color:var(--g);filter:blur(5px);user-select:none">$${Math.round(d.score*55)}</div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.15)">
+                <span style="font-size:.5rem;color:var(--sub);font-family:var(--mono)">🔒 Pro</span>
+              </div>
             </div>
           </div>
 
-          <!-- 잠긴 분석 텍스트 -->
-          <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden" onclick="openModal('pricing')">
-            <div style="font-size:.65rem;color:var(--sub);line-height:1.7;filter:blur(4px);user-select:none">이 도메인은 ${d.industry||'AI/테크'} 트렌드와 정확히 부합합니다. ${d.domain.split('.')[0].length <= 5 ? '5자 이내 짧은 이름으로 브랜드 가치가 높습니다.' : '검색량과 도메인 나이를 고려할 때 투자 가치가 있습니다.'} 상표권 충돌 없음, Sedo/Afternic 등록 시 빠른 판매 가능.</div>
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-              <span style="font-family:var(--mono);font-size:.6rem;color:var(--sub)">🔒 Pro에서 확인</span>
+          <!-- 분석 텍스트: 일부 공개 + 나머지 블러 -->
+          <div style="background:rgba(0,0,0,.15);border-radius:8px;padding:10px 14px;margin-bottom:12px;position:relative;">
+            <!-- 공개 텍스트 -->
+            <div style="font-size:.65rem;color:var(--sub);line-height:1.7;margin-bottom:6px">
+              이 도메인은 <span style="color:var(--g);font-weight:700">${d.industry||'AI/테크'}</span> 트렌드와 부합합니다.
+              ${d.domain.split('.')[0].length <= 5 ? '짧고 기억하기 쉬운 이름으로 브랜드 가치가 높습니다.' : '키워드 조합이 자연스럽고 검색 노출에 유리합니다.'}
+            </div>
+            <!-- 블러 처리된 나머지 -->
+            <div style="font-size:.65rem;color:var(--sub);line-height:1.7;filter:blur(4px);user-select:none;cursor:pointer" onclick="openModal('pricing')">
+              상표권 충돌 분석 결과: 없음. 타겟 바이어는 ${d.industry||'AI'} 스타트업 및 에이전시. Sedo 경매 등록 시 평균 ${Math.round(d.score*20)}일 내 판매 가능. 위험 수준: 낮음.
+            </div>
+            <!-- Pro 상세 확인 오버레이 -->
+            <div style="position:absolute;bottom:10px;right:10px">
+              <button style="background:transparent;border:1px solid rgba(0,212,170,.3);color:var(--g);font-family:var(--mono);font-size:.55rem;padding:3px 10px;border-radius:10px;cursor:pointer" onclick="openModal('pricing')">
+                Pro에서 상세 확인 →
+              </button>
             </div>
           </div>
 
           <!-- CTA -->
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div style="font-size:.62rem;color:var(--sub);line-height:1.6">
-              <span style="color:var(--text);font-weight:700">월 $2</span>로 모든 분석 잠금해제<br>
-              <span style="color:rgba(0,212,170,.6)">판매 전략 · 위험도 · 상표권 체크 포함</span>
+              <span style="color:var(--text);font-weight:700">월 $2</span>로 전체 분석 잠금해제<br>
+              <span style="color:rgba(0,212,170,.6)">타겟 바이어 · 판매 전략 · 위험도 · 상표권</span>
             </div>
             <button class="lock-btn" style="padding:9px 20px;font-size:.65rem;white-space:nowrap;flex-shrink:0" onclick="openModal('pricing')">
               🔓 잠금해제
