@@ -483,10 +483,9 @@ input[type=range] {
 /* expandable reason */
 .d-expand {
   border-top:1px solid var(--border);
-  padding:12px 20px 12px 56px;
-  display:none;
+  padding:0;
+  display:block;
 }
-.d-expand.open { display:block; }
 
 .d-reason {
   font-size:0.75rem;
@@ -700,13 +699,19 @@ input[type=range] {
 .btn-login:hover { border-color:var(--g); color:var(--g); }
 
 .btn-upgrade {
-  padding:5px 14px;
+  padding:7px 16px;
   background:linear-gradient(135deg,var(--g),var(--g2));
   color:var(--bg); border:none; font-family:var(--mono);
-  font-size:0.65rem; font-weight:700; border-radius:5px;
-  cursor:pointer; transition:.15s;
+  font-size:0.65rem; font-weight:700; border-radius:20px;
+  cursor:pointer; transition:.2s;
+  box-shadow:0 2px 12px rgba(0,212,170,.35);
+  animation: pulse-glow 2.5s infinite;
 }
-.btn-upgrade:hover { opacity:.85; }
+.btn-upgrade:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 4px 20px rgba(0,212,170,.5); }
+@keyframes pulse-glow {
+  0%, 100% { box-shadow:0 2px 12px rgba(0,212,170,.35); }
+  50% { box-shadow:0 2px 20px rgba(0,212,170,.6); }
+}
 
 .user-chip {
   display:flex; align-items:center; gap:6px;
@@ -768,10 +773,11 @@ input[type=range] {
   background:linear-gradient(135deg,var(--g),var(--g2));
   color:var(--bg); border:none; font-family:var(--mono);
   font-size:.65rem; font-weight:700; padding:8px 20px;
-  border-radius:20px; cursor:pointer; transition:.15s;
+  border-radius:20px; cursor:pointer; transition:.2s;
   white-space:nowrap;
+  box-shadow:0 3px 14px rgba(0,212,170,.4);
 }
-.lock-btn:hover { opacity:.85; transform:scale(1.03); }
+.lock-btn:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 5px 20px rgba(0,212,170,.55); }
 
 /* 모달 */
 .modal-bg {
@@ -781,9 +787,11 @@ input[type=range] {
 }
 .modal-bg.open { display:flex; }
 .modal-box {
-  background:var(--s1); border:1px solid var(--border2);
+  background:var(--s1);
+  border:1px solid rgba(0,212,170,.3);
   border-radius:16px; padding:32px;
   width:100%; max-width:460px; position:relative;
+  box-shadow:0 0 60px rgba(0,212,170,.15), 0 20px 60px rgba(0,0,0,.6);
 }
 .modal-x {
   position:absolute; top:14px; right:14px;
@@ -799,22 +807,26 @@ input[type=range] {
   border:1px solid var(--border2); border-radius:10px;
   padding:18px; cursor:pointer; transition:.15s; text-align:center;
 }
-.plan-card.sel, .plan-card:hover { border-color:var(--g); background:rgba(0,212,170,.06); }
+.plan-card.sel, .plan-card:hover { border-color:var(--g); background:rgba(0,212,170,.08); box-shadow:0 0 20px rgba(0,212,170,.1); }
+.plan-card.sel .plan-price { color:var(--g); }
 .plan-name { font-family:var(--mono); font-size:.62rem; color:var(--sub); text-transform:uppercase; margin-bottom:6px; }
 .plan-price { font-family:var(--mono); font-size:1.4rem; font-weight:700; }
 .plan-unit { font-size:.62rem; color:var(--sub); margin-top:2px; }
 .plan-save { font-size:.6rem; color:var(--g); margin-top:4px; font-weight:700; }
 .plan-btn {
-  width:100%; padding:11px; margin-top:4px;
+  display:block; width:100%; padding:13px; margin-top:8px;
   background:linear-gradient(135deg,var(--g),var(--g2));
   color:var(--bg); border:none; border-radius:8px;
-  font-family:var(--mono); font-size:.72rem; font-weight:700;
-  cursor:pointer; transition:.15s;
+  font-family:var(--mono); font-size:.75rem; font-weight:700;
+  cursor:pointer; transition:.2s; text-decoration:none;
+  text-align:center; letter-spacing:.5px;
+  box-shadow:0 4px 20px rgba(0,212,170,.3);
 }
-.plan-btn:hover { opacity:.85; }
+.plan-btn:hover { opacity:.9; transform:translateY(-1px); box-shadow:0 6px 24px rgba(0,212,170,.4); }
 .feat-list { list-style:none; font-size:.72rem; color:var(--sub); line-height:2; }
 .feat-list li::before { content:'✓ '; color:var(--g); font-weight:700; }
-.feat-list li.pro::before { content:'★ '; color:var(--warn); }
+.feat-list li.pro { color:var(--text); }
+.feat-list li.pro::before { content:'✦ '; color:var(--g); }
 
 /* 알림 토스트 */
 .toast {
@@ -1242,9 +1254,10 @@ function renderDomains() {
 
     return `
     <div class="d-card ${rankClass}" id="card-${i}">
+
+      <!-- 카드 헤더 -->
       <div class="d-main">
         <div class="d-rank">#${i+1}</div>
-
         <div class="d-score-ring">
           <svg viewBox="0 0 40 40">
             <circle class="ring-bg" cx="20" cy="20" r="18"/>
@@ -1254,7 +1267,6 @@ function renderDomains() {
           </svg>
           <div class="d-score-num" style="color:${d.grade==='A'?'var(--g)':d.grade==='B'?'var(--g2)':'var(--warn)'}">${d.score}</div>
         </div>
-
         <div class="d-info">
           <div class="d-name">${fmtDomain(d.domain)} ${d.isHot?'<span style="font-size:.6rem;background:rgba(255,79,107,.15);color:var(--hot);padding:2px 6px;border-radius:3px;font-family:var(--mono);letter-spacing:.4px">🔥 HOT</span>':''}</div>
           <div class="d-tags">
@@ -1262,56 +1274,95 @@ function renderDomains() {
             <span class="d-source ${srcClass}">${srcLabel}</span>
           </div>
         </div>
-
         <div class="d-metrics">
           <div class="d-metric">
-            <span class="d-mval">${d.regPrice || "$8~$15"}</span>
-            <span class="d-mkey">등록가</span>
+            <span class="d-mval">$${Math.round(d.score * 0.15 * 10)/10}~$${Math.round(d.score * 0.8)}</span>
+            <span class="d-mkey">예상 시세</span>
           </div>
           <div class="d-metric">
-            <span class="d-mval" style="color:var(--g)">${d.estValue.split('~')[0]}</span>
-            <span class="d-mkey">예상 최저</span>
+            <span class="d-mval" style="color:${d.score>=80?'var(--g)':d.score>=60?'var(--g2)':'var(--warn)'}">
+              ${d.score>=80?'높음':d.score>=60?'중간':'낮음'}
+            </span>
+            <span class="d-mkey">수익성</span>
           </div>
           <div class="d-metric">
-            <span class="d-mval">${d.backlinks || "—"}</span>
-            <span class="d-mkey">백링크</span>
+            <span class="d-mval">${d.industry||'기타'}</span>
+            <span class="d-mkey">산업군</span>
           </div>
         </div>
-
         <div class="d-action">
           <button class="btn-copy" onclick="copyD('${d.domain}', this)">복사</button>
-          <button class="btn-copy" onclick="toggleExpand(${i})">▾</button>
         </div>
       </div>
 
+      <!-- 제휴 파트너 -->
       <div class="d-partners">
         <span class="d-partner-label">등록</span>
         ${partnerPills}
       </div>
 
+      <!-- AI 분석 영역 - 항상 표시 -->
       <div class="d-expand" id="expand-${i}">
-        <div class="d-reason">"${d.reason}"</div>
-        <div class="d-data-row">
-          <div class="d-datum"><div class="d-datum-label">검색량</div><div class="d-datum-val" style="color:var(--sub);filter:blur(3px)">🔒 Pro</div></div>
-          <div class="d-datum"><div class="d-datum-label">도메인 나이</div><div class="d-datum-val" style="color:var(--sub);filter:blur(3px)">🔒 Pro</div></div>
-          <div class="d-datum"><div class="d-datum-label">산업군</div><div class="d-datum-val">${d.industry||'기타'}</div></div>
-          <div class="d-datum"><div class="d-datum-label">예상 시세</div><div class="d-datum-val" style="color:var(--g)">${d.estValue}</div></div>
-        </div>
-
         ${d.hasAIAnalysis ? `
         <div class="ai-panel">
-          <div class="ai-panel-title">✦ AI 심층 분석</div>
+          <div class="ai-panel-title">✦ AI 심층 분석 완료</div>
           <div class="ai-grid">
-            <div class="ai-datum"><div class="ai-datum-label">수익 가능성</div><div class="ai-datum-val">${d.profitPotential||'—'}</div></div>
+            <div class="ai-datum"><div class="ai-datum-label">수익 가능성</div><div class="ai-datum-val" style="color:${d.profitPotential==='높음'?'var(--g)':'var(--warn)'}">${d.profitPotential||'—'}</div></div>
             <div class="ai-datum"><div class="ai-datum-label">AI 예상 시세</div><div class="ai-datum-val" style="color:var(--g)">${d.estValueAI||d.estValue}</div></div>
             <div class="ai-datum"><div class="ai-datum-label">판매 기간</div><div class="ai-datum-val">${d.timeToSell||'—'}</div></div>
-            <div class="ai-datum"><div class="ai-datum-label">위험 수준</div><div class="ai-datum-val">${d.riskLevel||'—'}</div></div>
+            <div class="ai-datum"><div class="ai-datum-label">위험 수준</div><div class="ai-datum-val" style="color:${d.riskLevel==='낮음'?'var(--g)':'var(--warn)'}">${d.riskLevel||'—'}</div></div>
           </div>
-          <div class="ai-reason-detail">${d.detailedReason||'AI 분석 결과가 여기에 표시됩니다.'}<br><small style="opacity:.7">타겟 바이어: ${d.targetBuyers||'—'} · 전략: ${d.sellStrategy||'—'}</small></div>
+          <div class="ai-reason-detail">${d.detailedReason||''}<br><small style="opacity:.7">타겟 바이어: ${d.targetBuyers||'—'} · 전략: ${d.sellStrategy||'—'}</small></div>
         </div>` : `
-        <div style="border-top:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
-          <span style="font-family:var(--mono);font-size:.65rem;color:var(--sub)">✦ AI 심층 분석 — Pro 전용</span>
-          <button class="lock-btn" style="padding:5px 14px;font-size:.62rem" onclick="openModal('pricing')">⭐ Pro로 업그레이드</button>
+        <div style="padding:14px 20px;background:linear-gradient(135deg,rgba(0,212,170,.03),rgba(0,168,255,.03));border-top:1px solid rgba(0,212,170,.12);">
+
+          <!-- 상단: 공개 정보 1개 + 잠긴 정보 3개 -->
+          <div style="font-family:var(--mono);font-size:.6rem;color:var(--g);font-weight:700;margin-bottom:10px;letter-spacing:.5px">✦ AI 심층 분석</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+
+            <!-- 공개: 산업군 -->
+            <div style="background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:8px 10px;">
+              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">산업군</div>
+              <div style="font-size:.75rem;font-weight:700;color:var(--g)">${d.industry||'AI/테크'}</div>
+            </div>
+
+            <!-- 잠김: 수익 가능성 -->
+            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;cursor:pointer" onclick="openModal('pricing')">
+              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">수익 가능성</div>
+              <div style="font-size:.75rem;font-weight:700;color:var(--g);filter:blur(5px);user-select:none">${d.score>=75?'높음 ★★★':'중간 ★★☆'}</div>
+            </div>
+
+            <!-- 잠김: AI 예상 시세 -->
+            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;cursor:pointer" onclick="openModal('pricing')">
+              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">AI 예상 시세</div>
+              <div style="font-size:.75rem;font-weight:700;color:var(--g);filter:blur(5px);user-select:none">$${Math.round(d.score*12)}~$${Math.round(d.score*55)}</div>
+            </div>
+
+            <!-- 잠김: 타겟 바이어 -->
+            <div style="background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;cursor:pointer" onclick="openModal('pricing')">
+              <div style="font-size:.52rem;color:var(--sub);font-family:var(--mono);margin-bottom:4px">타겟 바이어</div>
+              <div style="font-size:.75rem;font-weight:700;color:var(--text);filter:blur(5px);user-select:none">${d.industry||'AI'} 스타트업</div>
+            </div>
+          </div>
+
+          <!-- 잠긴 분석 텍스트 -->
+          <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden" onclick="openModal('pricing')">
+            <div style="font-size:.65rem;color:var(--sub);line-height:1.7;filter:blur(4px);user-select:none">이 도메인은 ${d.industry||'AI/테크'} 트렌드와 정확히 부합합니다. ${d.domain.split('.')[0].length <= 5 ? '5자 이내 짧은 이름으로 브랜드 가치가 높습니다.' : '검색량과 도메인 나이를 고려할 때 투자 가치가 있습니다.'} 상표권 충돌 없음, Sedo/Afternic 등록 시 빠른 판매 가능.</div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+              <span style="font-family:var(--mono);font-size:.6rem;color:var(--sub)">🔒 Pro에서 확인</span>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="font-size:.62rem;color:var(--sub);line-height:1.6">
+              <span style="color:var(--text);font-weight:700">월 $2</span>로 모든 분석 잠금해제<br>
+              <span style="color:rgba(0,212,170,.6)">판매 전략 · 위험도 · 상표권 체크 포함</span>
+            </div>
+            <button class="lock-btn" style="padding:9px 20px;font-size:.65rem;white-space:nowrap;flex-shrink:0" onclick="openModal('pricing')">
+              🔓 잠금해제
+            </button>
+          </div>
         </div>`}
       </div>
     </div>`;
@@ -1360,31 +1411,36 @@ function showSkeletons() {
 <div class="modal-bg" id="modal-pricing">
   <div class="modal-box">
     <button class="modal-x" onclick="closeModal('pricing')">✕</button>
-    <div class="modal-h">🚀 DomainRadar Pro</div>
-    <div class="modal-sub">AI 심층 분석으로 더 높은 수익을 노리세요</div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:2rem;margin-bottom:8px">🔓</div>
+      <div class="modal-h" style="font-size:1.1rem;background:linear-gradient(135deg,var(--g),var(--g2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">DomainRadar Pro</div>
+      <div class="modal-sub" style="margin-bottom:0">흐릿하게 보이던 AI 분석 결과를 모두 잠금해제하세요</div>
+    </div>
     <div class="plan-row">
       <div class="plan-card sel">
         <div class="plan-name">월간</div>
         <div class="plan-price">$2</div>
         <div class="plan-unit">/월 (≈ ₩2,900)</div>
       </div>
-      <div class="plan-card">
+      <div class="plan-card" style="position:relative;overflow:visible">
+        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--g),var(--g2));color:var(--bg);font-family:var(--mono);font-size:.5rem;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap">BEST VALUE</div>
         <div class="plan-name">연간</div>
         <div class="plan-price">$20</div>
-        <div class="plan-unit">/년</div>
-        <div class="plan-save">2개월 무료</div>
+        <div class="plan-unit">/년 ($1.67/월)</div>
+        <div class="plan-save">2개월 무료 🎁</div>
       </div>
     </div>
     <ul class="feat-list" style="margin-bottom:20px">
       <li>매일 만료 도메인 자동 수집</li>
-      <li>규칙 기반 점수화 (무료 포함)</li>
-      <li class="pro">AI 심층 분석 — 수익 가능성, 타겟 바이어</li>
-      <li class="pro">예상 시세 정밀 분석</li>
+      <li>규칙 기반 점수화</li>
+      <li class="pro">수익 가능성 AI 분석 (높음/중간/낮음)</li>
+      <li class="pro">AI 예상 시세 ($XXX~$X,XXX)</li>
+      <li class="pro">타겟 바이어 & 판매 전략</li>
       <li class="pro">위험 요소 & 상표권 체크</li>
-      <li class="pro">판매 전략 추천</li>
+      <li class="pro">검색량 & 도메인 나이 분석</li>
     </ul>
     <a class="plan-btn" id="checkout-btn" href="https://onlinemarketinglab.gumroad.com/l/domainradar-pro" target="_blank" onclick="closeModal('pricing')">
-      Gumroad로 구독하기 →
+      🔓 지금 바로 잠금해제하기 →
     </a>
     <div style="text-align:center;margin-top:10px">
       <button onclick="closeModal('pricing'); showKeyModal();" style="background:transparent;border:none;color:var(--g);font-family:var(--mono);font-size:.65rem;cursor:pointer;text-decoration:underline">
