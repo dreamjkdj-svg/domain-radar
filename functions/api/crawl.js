@@ -1,8 +1,7 @@
 /**
  * crawl.js — Cloudflare Pages Function
- * GET /api/crawl  또는  Cron 트리거
+ * GET /api/crawl 또는 Cron 트리거
  */
-
 const TREND_KEYWORDS = [
   { words: ['ai', 'gpt', 'llm', 'ml', 'bot', 'auto', 'smart'], score: 18 },
   { words: ['saas', 'api', 'dev', 'code', 'app', 'cloud', 'stack'], score: 14 },
@@ -11,12 +10,10 @@ const TREND_KEYWORDS = [
   { words: ['studio', 'create', 'media', 'content', 'stream', 'pod'], score: 11 },
   { words: ['green', 'eco', 'solar', 'clean', 'sustain'], score: 10 },
 ];
-
 const TLD_SCORES = {
   '.com': 20, '.io': 16, '.ai': 18, '.co': 12,
   '.net': 8, '.app': 10, '.dev': 10, '.xyz': 4,
 };
-
 const PARTNER_LINKS = {
   domestic: [
     { name: '가비아', url: 'https://www.gabia.com/?utm_source=domainradar' },
@@ -28,6 +25,22 @@ const PARTNER_LINKS = {
   ],
 };
 
+// 날짜 기반 시드 난수 생성기
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
+}
+
+function getTodaySeed() {
+  const now = new Date();
+  // 한국 시간 기준 날짜 (UTC+9)
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.getFullYear() * 10000 + (kst.getMonth() + 1) * 100 + kst.getDate();
+}
+
 function scoreDomain(domain) {
   const lower = domain.toLowerCase();
   const tldMatch = lower.match(/(\.[a-z]+)$/);
@@ -37,7 +50,6 @@ function scoreDomain(domain) {
   let score = TLD_SCORES[tld] || 2;
   let industry = '기타';
   let tags = [];
-
   for (const { words, score: s } of TREND_KEYWORDS) {
     for (const w of words) {
       if (sld.includes(w)) {
@@ -51,11 +63,9 @@ function scoreDomain(domain) {
       }
     }
   }
-
   if (sld.length <= 5) score += 15;
   else if (sld.length <= 8) score += 8;
   if (/^[a-z]+$/.test(sld)) score += 5;
-
   const finalScore = Math.min(score, 99);
   const estLow = Math.round(finalScore * 3);
   const estHigh = Math.round(finalScore * 15);
@@ -78,37 +88,39 @@ function scoreDomain(domain) {
 }
 
 function generateDomains() {
-  const prefixes = ['ai','nova','flux','zeta','apex','sync','byte','core','mesh','edge',
-    'meta','loop','flow','hub','lux','arc','dash','peak','sky','zen',
-    'grid','link','mind','neo','ops','pro','run','set','tag','uni'];
-  const suffixes = ['lab','io','ai','tech','hq','co','app','dev','run','hub',
-    'ly','fy','zy','st','ex','ix','ax','ox','ux','us'];
-  const tlds = ['.com','.io','.ai','.co','.app','.dev'];
+  const seed = getTodaySeed();
+  const rand = seededRandom(seed);
 
-  const today = new Date();
-  const seed = today.getFullYear() * 10000 + (today.getMonth()+1) * 100 + today.getDate();
-  const rand = (n, s) => (seed * (s+1) * 2654435761 >>> 0) % n;
+  const prefixes = ['ai','get','use','try','go','my','the','pro','neo','zen',
+    'flux','nova','apex','meta','hyper','ultra','super','mega','auto','smart',
+    'quick','fast','easy','open','next','deep','bright','clear','swift','core'];
+  const suffixes = ['hq','labs','hub','io','ai','ly','fy','sy','co','app',
+    'base','flow','link','mind','sync','wave','peak','spot','zone','gate',
+    'vault','forge','craft','works','space','track','boost','pulse','shift','cloud'];
+  const tlds = ['.com', '.io', '.ai', '.co', '.app'];
 
   const domains = [];
   const used = new Set();
-  let attempts = 0;
 
-  while (domains.length < 20 && attempts < 200) {
-    attempts++;
-    const i = rand(prefixes.length, attempts);
-    const j = rand(suffixes.length, attempts * 3);
-    const k = rand(tlds.length, attempts * 7);
-    const domain = `${prefixes[i]}${suffixes[j]}${tlds[k]}`;
-    if (used.has(domain)) continue;
-    used.add(domain);
-    const scored = scoreDomain(domain);
-    if (scored && scored.score >= 20) domains.push(scored);
+  // 시드 기반으로 셔플된 인덱스 생성
+  const shuffledPrefixes = [...prefixes].sort(() => rand() - 0.5);
+  const shuffledSuffixes = [...suffixes].sort(() => rand() - 0.5);
+
+  for (let i = 0; i < shuffledPrefixes.length && domains.length < 60; i++) {
+    for (let j = 0; j < shuffledSuffixes.length && domains.length < 60; j++) {
+      for (let k = 0; k < tlds.length; k++) {
+        const domain = `${shuffledPrefixes[i]}${shuffledSuffixes[j]}${tlds[k]}`;
+        if (used.has(domain)) continue;
+        used.add(domain);
+        const scored = scoreDomain(domain);
+        if (scored && scored.score >= 20) domains.push(scored);
+      }
+    }
   }
 
   return domains.sort((a, b) => b.score - a.score).slice(0, 12);
 }
 
-// Cloudflare Pages Functions 형식
 export async function onRequest(context) {
   const headers = {
     'Content-Type': 'application/json',
@@ -117,7 +129,8 @@ export async function onRequest(context) {
 
   try {
     const domains = generateDomains();
-    const today = new Date().toLocaleDateString('ko-KR');
+    const today = new Date(new Date().getTime() + 9 * 60 * 60 * 1000)
+      .toLocaleDateString('ko-KR');
     return new Response(JSON.stringify({
       domains,
       generatedAt: new Date().toISOString(),
@@ -130,8 +143,7 @@ export async function onRequest(context) {
   }
 }
 
-// Cron 트리거용 (scheduled)
 export async function scheduled(event, env, ctx) {
-  console.log('Cron crawl triggered:', new Date().toISOString());
-  // KV에 저장하려면 env.DOMAIN_CACHE.put(...) 사용 가능
+  // Cron 트리거용 (매일 자정 실행)
+  console.log('Cron triggered:', new Date().toISOString());
 }
